@@ -71,7 +71,7 @@ def train_and_evaluate(model, X_train, X_test, y_train, y_test):
                   loss='sparse_categorical_crossentropy',
                   metrics=['accuracy'])
     
-    #early_stopping = EarlyStopping(monitor='val_loss', patience=30, restore_best_weights=True)
+    early_stopping = EarlyStopping(monitor='val_loss', patience=30, restore_best_weights=True)
     reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=10, min_lr=0.00001)
     
     # Split the data into train and validation sets
@@ -84,8 +84,8 @@ def train_and_evaluate(model, X_train, X_test, y_train, y_test):
         X_train_split, y_train_split,
         validation_data=(X_val, y_val),
         epochs=500,
-        batch_size=32,
-        callbacks=[reduce_lr],
+        batch_size=64,
+        callbacks=[early_stopping, reduce_lr],
         class_weight=class_weights_dict,
         verbose=1
     )

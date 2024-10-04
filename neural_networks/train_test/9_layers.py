@@ -79,7 +79,7 @@ def train_and_evaluate(model, X_train, X_test, y_train, y_test):
     
     num_classes = len(np.unique(y_train_num))
     model.layers[-1] = Dense(num_classes, activation='softmax')
-    model.compile(optimizer=Adam(learning_rate=0.0005),
+    model.compile(optimizer=Adam(learning_rate=0.0002),
                   loss='sparse_categorical_crossentropy',
                   metrics=['accuracy'])
     

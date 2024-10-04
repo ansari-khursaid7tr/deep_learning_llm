@@ -6,7 +6,7 @@ from sklearn.utils import class_weight
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout, BatchNormalization
-from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.optimizers import Adam, RMSprop
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from tensorflow.keras.regularizers import l2
 import sys
@@ -32,24 +32,33 @@ def load_and_preprocess_data(train_file1, train_file2, test_file):
 
 def create_improved_model(input_dim, num_classes):
     model = Sequential([
-        Dense(512, activation='relu', input_dim=input_dim, kernel_regularizer=l2(0.001)),
+        Dense(2048, activation='relu', input_dim=input_dim, kernel_regularizer=l2(0.001)),
         BatchNormalization(),
-        Dropout(0.3),
+        Dropout(0.5),
+        Dense(1024, activation='relu', kernel_regularizer=l2(0.001)),
+        BatchNormalization(),
+        Dropout(0.5),
+        Dense(512, activation='relu', kernel_regularizer=l2(0.001)),
+        BatchNormalization(),
+        Dropout(0.4),
         Dense(256, activation='relu', kernel_regularizer=l2(0.001)),
         BatchNormalization(),
-        Dropout(0.3),
+        Dropout(0.4),
         Dense(128, activation='relu', kernel_regularizer=l2(0.001)),
         BatchNormalization(),
         Dropout(0.3),
         Dense(64, activation='relu', kernel_regularizer=l2(0.001)),
         BatchNormalization(),
-        Dropout(0.2),
+        Dropout(0.3),
         Dense(32, activation='relu', kernel_regularizer=l2(0.001)),
+        BatchNormalization(),
+        Dropout(0.2),
+        Dense(16, activation='relu', kernel_regularizer=l2(0.001)),
         BatchNormalization(),
         Dropout(0.2),
         Dense(num_classes, activation='softmax')
     ])
-    model.compile(optimizer=Adam(learning_rate=0.001), 
+    model.compile(optimizer=RMSprop(learning_rate=0.0003, rho=0.9, epsilon=1e-08), 
                   loss='sparse_categorical_crossentropy', 
                   metrics=['accuracy'])
     return model
@@ -67,11 +76,11 @@ def train_and_evaluate(model, X_train, X_test, y_train, y_test):
     
     num_classes = len(np.unique(y_train_num))
     model.layers[-1] = Dense(num_classes, activation='softmax')
-    model.compile(optimizer=Adam(learning_rate=0.001),
+    model.compile(optimizer=RMSprop(learning_rate=0.0003, rho=0.9, epsilon=1e-08),
                   loss='sparse_categorical_crossentropy',
                   metrics=['accuracy'])
     
-    #early_stopping = EarlyStopping(monitor='val_loss', patience=30, restore_best_weights=True)
+    early_stopping = EarlyStopping(monitor='val_loss', patience=30, restore_best_weights=True)
     reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=10, min_lr=0.00001)
     
     # Split the data into train and validation sets
@@ -85,7 +94,7 @@ def train_and_evaluate(model, X_train, X_test, y_train, y_test):
         validation_data=(X_val, y_val),
         epochs=500,
         batch_size=32,
-        callbacks=[reduce_lr],
+        callbacks=[early_stopping, reduce_lr],
         class_weight=class_weights_dict,
         verbose=1
     )
